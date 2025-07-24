@@ -1,0 +1,21 @@
+runs: 5
+prerequisites:
+  - name: funclatency
+    cmd: funclatency
+    args:
+      - /usr/lib/x86_64-linux-gnu/libc.so.6:read
+loads:
+  - name: stressor
+    cmd: stress-ng
+    args:
+      - --hdd
+      - 4
+      - --hdd-bytes
+      - 8G
+      - --timeout 5m
+      - --temp-path
+      - /tmp/stress
+cases:
+  - name: baseline
+  - name: with a uprobe
+    cmd: ./uprobe
