@@ -99,7 +99,6 @@ func (c *CmdInfo) Signal(sig syscall.Signal) {
 	if c.Cmd != nil {
 		c.mu.Lock()
 		// TODO: make it configurable
-		//cmd.Cmd.Process.Signal(syscall.SIGTERM)
 		c.Cmd.Process.Signal(sig)
 		c.mu.Unlock()
 	}
