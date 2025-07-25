@@ -88,7 +88,7 @@ func (c *CmdInfo) Exec(wg *sync.WaitGroup, waitChan chan error) {
 	c.UserTime = userTime
 	c.ElapsedTime = elapsed.Seconds()
 
-	log.Info().Str("finisced", c.Name).Float64("kernel time", c.KernelTime).
+	log.Info().Str("finished", c.Name).Float64("kernel time", c.KernelTime).
 		Float64("user time", c.UserTime).Float64("elapsed time", c.ElapsedTime).Msg("")
 
 	c.Stdout = stdout.String()
