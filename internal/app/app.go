@@ -139,12 +139,6 @@ func Run(confContent []byte) error {
 					log.Fatal().Err(err).Msg("")
 				}
 			}
-			for _, step := range conf.Cases {
-				err = dumpOutputToFile(currentOutdir, i, case_, step)
-				if err != nil {
-					log.Fatal().Err(err).Msg("")
-				}
-			}
 			err = dumpOutputToFile(currentOutdir, i, case_, case_)
 			if err != nil {
 				log.Fatal().Err(err).Msg("")
