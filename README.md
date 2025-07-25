@@ -44,6 +44,9 @@ cases:
   - name: baseline
   - name: with a uprobe
     cmd: ./uprobe
+    env:
+      - SOMECONFIG=value
+    workdir: /home/ubuntu
 ```
 
 ## Installation
