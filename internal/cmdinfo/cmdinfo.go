@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/therealbobo/benchpress/internal/ingestion"
+	"github.com/therealbobo/benchpress/internal/processing"
 )
 
 type CmdInfo struct {
@@ -23,6 +26,11 @@ type CmdInfo struct {
 	ElapsedTime float64   `yaml:"-"`
 	KernelTime  float64   `yaml:"-"`
 	UserTime    float64   `yaml:"-"`
+
+	IngestorConfig  *ingestion.IngestorConfig   `yaml:"ingestion"`
+	ProcessorConfig *processing.ProcessorConfig `yaml:"processing"`
+
+	Data []map[string]any
 }
 
 func timevalToSeconds(tv syscall.Timeval) float64 {
@@ -55,7 +63,6 @@ func (c *CmdInfo) Exec(wg *sync.WaitGroup, waitChan chan error) {
 	if len(c.Env) != 0 {
 		cmd.Env = c.Env
 	}
-
 
 	c.mu.Lock()
 	c.Cmd = cmd

@@ -14,14 +14,23 @@ const (
 	OpMax    ProcessingOp = "max"
 )
 
+type ProcessorConfig struct {
+	Operations []ProcessingOp `yaml:"operations"`
+}
+
 type Processor struct {
-	Operation ProcessingOp
+	config ProcessorConfig
+}
+
+func NewProcessor(cfg ProcessorConfig) *Processor {
+	return &Processor{config: cfg,}
 }
 
 func (s *Processor) Process(data []map[string]any) (map[string]any, error) {
 	intermedieryResult := make(map[string]float64)
 
-	switch s.Operation {
+	// TODO: support multiple operations
+	switch s.config.Operations[0] {
 	case OpMean:
 		for _, run := range data {
 			for key := range run {
@@ -78,7 +87,8 @@ func (s *Processor) Process(data []map[string]any) (map[string]any, error) {
 			}
 		}
 	default:
-		return nil, fmt.Errorf("%s aggregate operator not implemented", s.Operation)
+		// TODO: support multiple operations
+		return nil, fmt.Errorf("%s aggregate operator not implemented", s.config.Operations[0])
 	}
 
 	result := make(map[string]any)

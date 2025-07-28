@@ -11,14 +11,23 @@ import (
 )
 
 type Aggregate struct {
-	Field     string      `yaml:"field" json:"field"`
-	GroupBy   []string    `yaml:"group_by, omitempty" json:"group_by,omitempty"`
+	Field   string   `yaml:"field" json:"field"`
+	GroupBy []string `yaml:"group_by" json:"group_by"`
 }
 
-type jsonIngestor struct {
+type JsonIngestorConfig struct {
+	Source     Source    `yaml:"source,omitempty" json:"source,omitempty"`
 	Selector   *string   `yaml:"selector,omitempty" json:"selector,omitempty"`
 	Expression *string   `yaml:"expression,omitempty" json:"expression,omitempty"`
 	Aggregate  Aggregate `yaml:"aggregate" json:"aggregate"`
+}
+
+type jsonIngestor struct {
+	config JsonIngestorConfig
+}
+
+func NewJsonIngestor(cfg JsonIngestorConfig) *jsonIngestor {
+	return &jsonIngestor{config: cfg}
 }
 
 func ptr(s string) *string {
@@ -48,10 +57,10 @@ func selectFromLine(doc, selector string) (any, error) {
 func (s *jsonIngestor) Select(docs []string) (string, error) {
 	var selector string
 
-	if s.Expression != nil {
-		selector = *s.Expression
-	} else if s.Selector != nil {
-		selector = *s.Selector
+	if s.config.Expression != nil {
+		selector = *s.config.Expression
+	} else if s.config.Selector != nil {
+		selector = *s.config.Selector
 	} else {
 		return "", fmt.Errorf("jsonIngestor: no selector provided")
 	}
@@ -80,8 +89,8 @@ func (s *jsonIngestor) Standardize(doc string) (map[string]any, error) {
 
 	// no-op filter
 	selector := ptr("@")
-	if s.Selector != nil {
-		selector = s.Selector
+	if s.config.Selector != nil {
+		selector = s.config.Selector
 	}
 
 	target, err := selectFromLine(doc, *selector)
@@ -89,7 +98,7 @@ func (s *jsonIngestor) Standardize(doc string) (map[string]any, error) {
 		return nil, err
 	}
 
-	if s.Aggregate.GroupBy != nil {
+	if s.config.Aggregate.GroupBy != nil {
 		if !isList(target) {
 			return nil, fmt.Errorf(
 				"consulting doc \"%s\" using key \"%v\" didn't result in a list"+
@@ -105,7 +114,7 @@ func (s *jsonIngestor) Standardize(doc string) (map[string]any, error) {
 		for _, e := range target.([]any) {
 			var groupedKeys []string
 			sample := e.(map[string]any)
-			for _, key := range s.Aggregate.GroupBy {
+			for _, key := range s.config.Aggregate.GroupBy {
 				// TODO: Does this code panic if no key if found?
 				// TODO: Force whatever key to a string. Do I need
 				// to consider other types?
@@ -132,7 +141,7 @@ func (s *jsonIngestor) Standardize(doc string) (map[string]any, error) {
 			}
 			key := strings.Join(groupedKeys, "-")
 			// TODO: what if the key not exists?
-			result[key] = sample[s.Aggregate.Field]
+			result[key] = sample[s.config.Aggregate.Field]
 		}
 
 	} else if isMap(target) {
@@ -151,4 +160,8 @@ func (s *jsonIngestor) Standardize(doc string) (map[string]any, error) {
 	}
 
 	return result, nil
+}
+
+func (s *jsonIngestor) Source() Source {
+	return s.config.Source
 }

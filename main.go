@@ -30,6 +30,6 @@ func main() {
 
 	err = app.Run(f)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("")
 	}
 }
