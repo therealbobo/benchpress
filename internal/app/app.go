@@ -20,8 +20,10 @@ import (
 )
 
 type config struct {
-	Runs    int        `yaml:"runs"`
-	OutDir  string     `yaml:"outdir"`
+	Runs    int                `yaml:"runs"`
+	OutDir  string             `yaml:"outdir"`
+	Setup   []*cmdinfo.CmdInfo `yaml:"setup"`
+	Cleanup []*cmdinfo.CmdInfo `yaml:"cleanup"`
 	PreReqs []*cmdinfo.CmdInfo `yaml:"prerequisites"`
 	Loads   []*cmdinfo.CmdInfo `yaml:"loads"`
 	Cases   []*cmdinfo.CmdInfo `yaml:"cases"`
@@ -135,18 +137,26 @@ func Run(confContent []byte) error {
 	currentOutdir := filepath.Join(conf.OutDir, timestamp)
 
 	for _, case_ := range conf.Cases {
-		for _, step := range append(conf.PreReqs, conf.Loads...)   {
+		for _, step := range append(conf.PreReqs, conf.Loads...) {
 			createDirFromCmdInfo(currentOutdir, case_, step)
 		}
 		createDirFromCmdInfo(currentOutdir, case_, case_)
 	}
 
 	waitChan := make(chan error)
-
+	nopChan := make(chan error)
 
 	for _, case_ := range conf.Cases {
-		for i := 1 ; i < conf.Runs+1 ; i++ {
+		for i := 1; i < conf.Runs+1; i++ {
 			log.Info().Int("run", i).Str("case", case_.Name).Msg("")
+
+			var nopWg sync.WaitGroup
+			nopWg.Add(len(conf.Setup))
+			for _, s := range conf.Setup {
+				go s.Exec(&nopWg, nopChan)
+			}
+			waitForNCmds(len(conf.Setup), nopChan)
+			nopWg.Wait()
 
 			var prereqWg sync.WaitGroup
 			targetNumWaits := len(conf.PreReqs)
@@ -185,7 +195,7 @@ func Run(confContent []byte) error {
 			}
 			prereqWg.Wait()
 
-			for _, step := range append(conf.PreReqs, conf.Loads...)   {
+			for _, step := range append(conf.PreReqs, conf.Loads...) {
 				err = dumpOutputToFile(currentOutdir, i, case_, step)
 				if err != nil {
 					log.Fatal().Err(err).Msg("")
@@ -197,9 +207,16 @@ func Run(confContent []byte) error {
 				log.Fatal().Err(err).Msg("")
 			}
 
+			nopWg.Add(len(conf.Cleanup))
+			for _, s := range conf.Cleanup {
+				go s.Exec(&nopWg, nopChan)
+			}
+			waitForNCmds(len(conf.Cleanup), nopChan)
+			nopWg.Wait()
+
 		}
 
-		for _, step := range append(conf.PreReqs, conf.Loads...)   {
+		for _, step := range append(conf.PreReqs, conf.Loads...) {
 			err := process(case_.Name, step)
 			if err != nil {
 				return err
